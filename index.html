@@ -9,281 +9,71 @@
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         :root {
-            --bg: #060810;
-            --surface: #0a0d16;
-            --border: rgba(99,179,237,0.12);
-            --border-active: rgba(99,179,237,0.5);
-            --text: #a8d4f5;
-            --muted: rgba(99,179,237,0.35);
-            --accent: #63b3ed;
-            --accent-dim: rgba(99,179,237,0.12);
-            --danger: #fc8181;
-            --danger-dim: rgba(252,129,129,0.1);
-            --header: 48px;
-            --mono: 'DM Mono', monospace;
-            --display: 'Syne', sans-serif;
+            --bg: #060810; --surface: #0a0d16; --border: rgba(99,179,237,0.12);
+            --text: #a8d4f5; --accent: #63b3ed; --header: 48px;
+            --mono: 'DM Mono', monospace; --display: 'Syne', sans-serif;
         }
-
-        html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); }
-
-        body {
-            font-family: var(--mono);
-            background-image: 
-                radial-gradient(ellipse 80% 40% at 50% -10%, rgba(99,179,237,0.08) 0%, transparent 60%);
-        }
-
-        /* ── SCROLLBAR ── */
+        html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); }
+        body { background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(99,179,237,0.08) 0%, transparent 60%); }
+        
         ::-webkit-scrollbar { display: none; }
 
-        /* ── HEADER ── */
         #header {
-            position: fixed; top: 0; left: 0; right: 0;
-            height: var(--header);
-            background: rgba(8,10,15,0.92);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center;
-            padding: 0 20px;
-            gap: 20px;
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; right: 0; height: var(--header);
+            background: rgba(8,10,15,0.92); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border); display: flex; align-items: center;
+            padding: 0 20px; z-index: 1000;
         }
+        #logo { font-family: var(--display); font-weight: 800; font-size: 13px; letter-spacing: 0.18em; }
 
-        #logo {
-            font-family: var(--display);
-            font-weight: 800;
-            font-size: 13px;
-            letter-spacing: 0.18em;
-            color: var(--text);
-            white-space: nowrap;
-            display: flex; align-items: center; gap: 8px;
-            transition: 0.3s;
-        }
-        #logo:hover { color: var(--accent); text-shadow: 0 0 15px var(--accent); cursor: default; }
-
-        #logo::before {
-            content: '';
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        #panic-btn {
-            background: transparent; border: 1px solid var(--danger);
-            color: var(--danger); font-family: var(--mono); font-size: 9px;
-            padding: 4px 10px; border-radius: 5px; cursor: pointer;
-            text-transform: uppercase; transition: 0.2s;
-        }
-        #panic-btn:hover { background: var(--danger-dim); }
-
-        #layout-controls {
-            display: flex; align-items: center; gap: 4px;
-            margin-left: auto;
-        }
-
+        #layout-controls { display: flex; gap: 4px; margin-left: auto; }
         .layout-btn {
-            width: 30px; height: 26px;
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            background: transparent;
-            color: var(--muted);
-            font-family: var(--mono);
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex; align-items: center; justify-content: center;
+            width: 30px; height: 26px; border: 1px solid var(--border); border-radius: 5px;
+            background: transparent; color: rgba(99,179,237,0.35); cursor: pointer; font-family: var(--mono);
         }
-        .layout-btn:hover { border-color: var(--border-active); color: var(--accent); background: var(--accent-dim); }
-        .layout-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .layout-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(99,179,237,0.12); }
 
-        /* ── GRID ── */
-        #stage {
-            position: fixed;
-            top: var(--header); left: 0; right: 0; bottom: 0;
-            display: grid;
-            gap: 3px;
-            padding: 3px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        #stage { position: fixed; top: var(--header); left: 0; right: 0; bottom: 0; display: grid; gap: 3px; padding: 3px; }
+        
+        .cell { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .cell:fullscreen { border: none; border-radius: 0; }
+        .cell iframe { width: 100%; height: 100%; border: none; }
+
+        /* Le BOUCLIER anti-pub pour le plein écran */
+        .cell-shield {
+            position: absolute; inset: 0; z-index: 10;
+            background: transparent; cursor: pointer;
         }
 
-        /* ── CELL ── */
-        .cell {
-            position: relative;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-            transition: border-color 0.2s, transform 0.2s;
+        .cell-toolbar {
+            position: absolute; top: 10px; right: 10px; z-index: 20;
+            opacity: 0; transition: opacity 0.2s;
         }
-        /* CSS pour le mode plein écran natif */
-        .cell:fullscreen { border: none; border-radius: 0; padding: 0; }
-        .cell:-webkit-full-screen { border: none; border-radius: 0; padding: 0; }
-
-        .cell:hover { border-color: rgba(99,179,237,0.3); }
-        .cell iframe { width: 100%; height: 100%; border: none; display: block; }
-
-        .live-indicator {
-            position: absolute; top: 10px; right: 10px; width: 6px; height: 6px;
-            background: #ff4b4b; border-radius: 50%; box-shadow: 0 0 8px #ff4b4b;
-            animation: pulse 1s infinite; z-index: 10; pointer-events: none;
+        .cell:hover .cell-toolbar { opacity: 1; }
+        .toolbar-btn {
+            background: rgba(6,8,16,0.8); border: 1px solid var(--accent); color: var(--accent);
+            padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer; text-transform: uppercase;
         }
 
         .cell-empty {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 12px;
-            cursor: pointer;
-            background: linear-gradient(135deg, rgba(99,179,237,0.06) 0%, rgba(99,179,237,0.02) 100%);
-            transition: background 0.2s;
-            border: none;
+            width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; background: rgba(99,179,237,0.02); border: none; cursor: pointer; color: var(--accent);
         }
-        .cell-empty:hover { background: linear-gradient(135deg, rgba(99,179,237,0.13) 0%, rgba(99,179,237,0.06) 100%); }
-        .cell-empty .plus-icon {
-            width: 40px; height: 40px;
-            border: 1.5px solid rgba(99,179,237,0.4);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--accent);
-            font-size: 20px;
-            background: rgba(99,179,237,0.08);
-            transition: all 0.2s;
-            box-shadow: 0 0 16px rgba(99,179,237,0.1);
-        }
-        .cell-empty:hover .plus-icon {
-            border-color: var(--accent);
-            background: rgba(99,179,237,0.18);
-            box-shadow: 0 0 24px rgba(99,179,237,0.25);
-            transform: scale(1.08);
-        }
-        .cell-empty span {
-            font-size: 9px;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: var(--accent);
-            opacity: 0.6;
-        }
-
-        /* ── CELL TOOLBAR ── */
-        .cell-toolbar {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 38px;
-            background: linear-gradient(to top, rgba(6,8,16,0.95) 0%, rgba(6,8,16,0.7) 60%, transparent 100%);
-            display: flex; align-items: center; justify-content: flex-end;
-            padding: 0 8px; gap: 6px;
-            opacity: 0;
-            transition: opacity 0.18s;
-        }
-        .cell:hover .cell-toolbar { opacity: 1; }
-
-        .toolbar-btn {
-            height: 26px; padding: 0 10px;
-            border-radius: 5px;
-            border: 1px solid rgba(99,179,237,0.3);
-            background: rgba(6,8,16,0.8);
-            backdrop-filter: blur(8px);
-            color: var(--accent);
-            font-family: var(--mono);
-            font-size: 9px;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            cursor: pointer;
-            display: flex; align-items: center; gap: 5px;
-            transition: all 0.15s;
-            white-space: nowrap;
-        }
-        .toolbar-btn:hover { background: rgba(99,179,237,0.15); border-color: var(--accent); }
-        .toolbar-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
-
-        .cell-num {
-            position: absolute; top: 8px; left: 8px;
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--accent);
-            background: rgba(6,8,16,0.75);
-            padding: 2px 7px;
-            border-radius: 4px;
-            border: 1px solid rgba(99,179,237,0.2);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s;
-        }
-        .cell:hover .cell-num { opacity: 1; }
-
-        /* ── MODAL ── */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(6,8,16,0.88);
-            backdrop-filter: blur(8px);
-            z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            padding: 24px;
-            animation: fadeIn 0.15s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-
-        .modal {
-            width: 100%; max-width: 440px;
-            background: #0d1220;
-            border: 1px solid rgba(99,179,237,0.25);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 0 60px rgba(99,179,237,0.08), 0 24px 48px rgba(0,0,0,0.6);
-        }
-        .modal-label {
-            font-size: 10px;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: var(--accent);
-            opacity: 0.7;
-            margin-bottom: 14px;
-        }
-        .modal input {
-            width: 100%;
-            background: rgba(99,179,237,0.05);
-            border: 1px solid rgba(99,179,237,0.2);
-            border-radius: 8px;
-            padding: 13px 16px;
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: 12px;
-            outline: none;
-            transition: border-color 0.15s, background 0.15s;
-        }
-        .modal input:focus { border-color: var(--accent); background: rgba(99,179,237,0.08); }
-        .modal-actions {
-            display: flex; gap: 8px; margin-top: 12px;
-        }
-        .btn {
-            flex: 1; padding: 11px;
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            font-family: var(--mono);
-            font-size: 10px;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.15s;
-            background: transparent;
-            color: var(--text);
-        }
-        .btn-primary { background: var(--accent); border-color: var(--accent); color: #060810; font-weight: 600; }
-        .btn-danger { color: var(--danger); border-color: rgba(252,129,129,0.2); }
-        .btn-ghost { color: var(--muted); flex: 0 0 44px; }
+        .plus-icon { width: 40px; height: 40px; border: 1px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 10px; }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(6,8,16,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal { width: 450px; background: #0d1220; border: 1px solid var(--accent); padding: 25px; border-radius: 12px; }
+        .modal input { width: 100%; padding: 12px; background: #060810; border: 1px solid var(--border); color: white; margin: 15px 0; outline: none; font-family: var(--mono); font-size: 12px; }
+        .modal-actions { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; font-family: var(--mono); font-size: 10px; background: transparent; color: white; border: 1px solid var(--border); }
+        .btn-primary { background: var(--accent); color: black; border: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <header id="header">
     <div id="logo">⚓ LA PIRATERIE</div>
-    <button id="panic-btn" onclick="toggleMuteAll()">Panic: Mute All</button>
     <div id="layout-controls"></div>
 </header>
 
@@ -291,73 +81,18 @@
 
 <script>
 (function() {
-    const COUNTS = [1,2,4,6];
-    let isMuted = false;
-    let count = (() => {
-        const saved = parseInt(localStorage.getItem('ms_count'));
-        return [1,2,4,6].includes(saved) ? saved : 4;
-    })();
-    let streams = (() => {
-        try { return JSON.parse(localStorage.getItem('ms_streams')) || []; } catch { return []; }
-    })();
-
-    while (streams.length < 6) streams.push({ id: streams.length, url: '' });
+    let count = parseInt(localStorage.getItem('ms_count')) || 4;
+    let streams = JSON.parse(localStorage.getItem('ms_streams')) || Array(6).fill().map((_, i) => ({ id: i, url: '' }));
 
     function save() {
         localStorage.setItem('ms_count', count);
         localStorage.setItem('ms_streams', JSON.stringify(streams));
-        updateTabTitle();
-    }
-
-    function updateTabTitle() {
-        const active = streams.filter(s => s.url).length;
-        document.title = active > 0 ? `(${active}) MULTISTREAM` : "MULTISTREAM";
-    }
-
-    function cleanUrl(url) {
-        if (!url || !url.trim()) return '';
-        url = url.trim();
-        if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/') + (url.includes('?') ? '&autoplay=1' : '?autoplay=1');
-        if (url.includes('twitch.tv/') && !url.includes('player.twitch.tv')) {
-            const ch = url.split('/').filter(Boolean).pop();
-            return `https://player.twitch.tv/?channel=${ch}&parent=${location.hostname || 'localhost'}&autoplay=true`;
-        }
-        return url;
-    }
-
-    window.toggleMuteAll = function() {
-        isMuted = !isMuted;
-        const btn = document.getElementById('panic-btn');
-        btn.textContent = isMuted ? "Unmute All" : "Panic: Mute All";
-        btn.style.borderColor = isMuted ? "var(--accent)" : "var(--danger)";
-        btn.style.color = isMuted ? "var(--accent)" : "var(--danger)";
-        
-        // On applique le mute sur les iframes existantes pour un effet immédiat
-        document.querySelectorAll('iframe').forEach(iframe => {
-            let src = iframe.src;
-            if(isMuted) {
-                if(!src.includes('muted=true')) src += (src.includes('?') ? '&muted=true' : '?muted=true');
-            } else {
-                src = src.replace('&muted=true', '').replace('?muted=true', '');
-            }
-            iframe.src = src;
-        });
-    }
-
-    function getGridStyle() {
-        const styles = {
-            1: { cols: '1fr', rows: '1fr' },
-            2: { cols: '1fr 1fr', rows: '1fr' },
-            4: { cols: '1fr 1fr', rows: '1fr 1fr' },
-            6: { cols: '1fr 1fr 1fr', rows: '1fr 1fr' },
-        };
-        return styles[count] || styles[4];
     }
 
     function renderControls() {
         const el = document.getElementById('layout-controls');
         el.innerHTML = '';
-        COUNTS.forEach(n => {
+        [1,2,4,6].forEach(n => {
             const btn = document.createElement('button');
             btn.className = 'layout-btn' + (n === count ? ' active' : '');
             btn.textContent = n;
@@ -368,127 +103,76 @@
 
     function renderStage() {
         const stage = document.getElementById('stage');
-        const { cols, rows } = getGridStyle();
-        stage.style.gridTemplateColumns = cols;
-        stage.style.gridTemplateRows = rows;
+        const grids = { 1: '1fr', 2: '1fr 1fr', 4: '1fr 1fr', 6: '1fr 1fr 1fr' };
+        const rows = { 1: '1fr', 2: '1fr', 4: '1fr 1fr', 6: '1fr 1fr' };
+        stage.style.gridTemplateColumns = grids[count];
+        stage.style.gridTemplateRows = rows[count];
         stage.innerHTML = '';
+        
         streams.slice(0, count).forEach((s, i) => {
-            stage.appendChild(buildCell(s, i));
-        });
-    }
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            if (s.url) {
+                const iframe = document.createElement('iframe');
+                iframe.src = s.url;
+                iframe.allow = "autoplay; fullscreen";
+                cell.appendChild(iframe);
 
-    function buildCell(s, i) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.id = `cell-${i}`; // ID ajouté pour cibler la cellule
+                const shield = document.createElement('div');
+                shield.className = 'cell-shield';
+                
+                // DOUBLE CLIC : Plein écran natif (Zéro coupure, Zéro refresh)
+                shield.ondblclick = () => {
+                    if (cell.requestFullscreen) cell.requestFullscreen();
+                    else if (cell.webkitRequestFullscreen) cell.webkitRequestFullscreen();
+                };
 
-        const num = document.createElement('div');
-        num.className = 'cell-num';
-        num.textContent = '0' + (i + 1);
-        cell.appendChild(num);
+                // CLIC SIMPLE : On laisse passer vers l'iframe pour le bouton Play
+                shield.onclick = () => {
+                    shield.style.pointerEvents = 'none';
+                    setTimeout(() => { shield.style.pointerEvents = 'auto'; }, 1000);
+                };
 
-        if (s.url) {
-            const dot = document.createElement('div');
-            dot.className = 'live-indicator';
-            cell.appendChild(dot);
+                cell.appendChild(shield);
 
-            const iframe = document.createElement('iframe');
-            iframe.src = s.url;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'autoplay; fullscreen';
-            cell.appendChild(iframe);
-
-            const toolbar = document.createElement('div');
-            toolbar.className = 'cell-toolbar';
-            toolbar.innerHTML = `
-                <button class="toolbar-btn" data-action="expand">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-                    Plein écran
-                </button>
-                <button class="toolbar-btn" data-action="edit">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Modifier
-                </button>
-            `;
-            toolbar.querySelector('[data-action="edit"]').onclick = () => openModal(s.id);
-            // MODIFICATION : Utilise la nouvelle fonction plein écran
-            toolbar.querySelector('[data-action="expand"]').onclick = () => goFullscreen(cell);
-            cell.appendChild(toolbar);
-        } else {
-            const empty = document.createElement('button');
-            empty.className = 'cell-empty';
-            empty.innerHTML = `<div class="plus-icon">+</div><span>Ajouter flux</span>`;
-            empty.onclick = () => openModal(s.id);
-            cell.appendChild(empty);
-        }
-        return cell;
-    }
-
-    // NOUVELLE FONCTION : Plein écran sans bug + Pause des autres
-    function goFullscreen(element) {
-        // 1. Mettre les autres en pause (on vide le src pour stopper le chargement/données)
-        const currentIframe = element.querySelector('iframe');
-        document.querySelectorAll('iframe').forEach(f => {
-            if (f !== currentIframe) {
-                f.dataset.savedSrc = f.src; // On sauvegarde l'URL
-                f.src = "about:blank";      // On coupe le flux
+                const toolbar = document.createElement('div');
+                toolbar.className = 'cell-toolbar';
+                toolbar.innerHTML = `<button class="toolbar-btn" onclick="openModal(${i})">URL</button>`;
+                cell.appendChild(toolbar);
+            } else {
+                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})"><div class="plus-icon">+</div><span>AJOUTER FLUX ${i+1}</span></button>`;
             }
+            stage.appendChild(cell);
         });
-
-        // 2. Lancer le plein écran natif sur la cellule
-        if (element.requestFullscreen) element.requestFullscreen();
-        else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
     }
 
-    // ÉCOUTEUR : Détecte quand on quitte le plein écran pour relancer les autres
-    document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement) {
-            document.querySelectorAll('iframe').forEach(f => {
-                if (f.dataset.savedSrc) {
-                    f.src = f.dataset.savedSrc; // On remet le stream
-                    delete f.dataset.savedSrc;
-                }
-            });
-        }
-    });
-
-    function openModal(id) {
-        document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
-        const stream = streams.find(s => s.id === id);
+    window.openModal = function(id) {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal">
-                <p class="modal-label">Flux ${String(id + 1).padStart(2, '0')} — URL du stream</p>
-                <input id="url-input" type="text" placeholder="https://…" value="${stream?.url || ''}">
+                <p style="font-size:10px; opacity:0.6">LIEN DU STREAM (EX: EMBEDSPORTS)</p>
+                <input type="text" id="url-in" value="${streams[id].url}" placeholder="https://...">
                 <div class="modal-actions">
-                    <button class="btn btn-primary" id="btn-ok">Valider</button>
-                    <button class="btn btn-danger" id="btn-clear">Vider</button>
-                    <button class="btn btn-ghost" id="btn-cancel">✕</button>
+                    <button class="btn btn-primary" onclick="confirmUrl(${id})">VALIDER</button>
+                    <button class="btn" onclick="this.closest('.modal-overlay').remove()">ANNULER</button>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
-        const input = overlay.querySelector('#url-input');
+        const input = document.getElementById('url-in');
         input.focus();
+        input.onkeydown = e => { if(e.key === 'Enter') confirmUrl(id); };
+    };
 
-        const commit = (val) => { streams.find(s => s.id === id).url = cleanUrl(val); save(); renderAll(); overlay.remove(); };
-        overlay.querySelector('#btn-ok').onclick = () => commit(input.value);
-        overlay.querySelector('#btn-clear').onclick = () => commit('');
-        overlay.querySelector('#btn-cancel').onclick = () => overlay.remove();
-        overlay.onclick = e => e.target === overlay && overlay.remove();
-        input.onkeydown = e => { if (e.key === 'Enter') commit(input.value); if (e.key === 'Escape') overlay.remove(); };
-    }
+    window.confirmUrl = function(id) {
+        let val = document.getElementById('url-in').value.trim();
+        streams[id].url = val;
+        save(); renderAll();
+        document.querySelector('.modal-overlay').remove();
+    };
 
-    document.addEventListener('keydown', (e) => {
-        if (document.querySelector('input:focus')) return;
-        if (['1','2','4','6'].includes(e.key)) { count = parseInt(e.key); save(); renderAll(); }
-        if (e.key === 'Escape') {
-            const modal = document.querySelector('.modal-overlay'); if (modal) modal.remove();
-        }
-    });
-
-    function renderAll() { renderControls(); renderStage(); updateTabTitle(); }
+    function renderAll() { renderControls(); renderStage(); }
     renderAll();
 })();
 </script>
