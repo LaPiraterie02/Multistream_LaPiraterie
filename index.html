@@ -3,81 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MULTISTREAM</title>
+    <title>MULTISTREAM - LA PIRATERIE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@800&display=swap" rel="stylesheet">
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --bg: #060810; --surface: #0a0d16; --border: rgba(99,179,237,0.2);
+            --bg: #060810; --surface: #0a0d16; --border: rgba(99,179,237,0.15);
             --text: #a8d4f5; --accent: #63b3ed; --header: 48px;
             --mono: 'DM Mono', monospace; --display: 'Syne', sans-serif;
         }
         html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); }
-        body { background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(99,179,237,0.08) 0%, transparent 60%); }
         
         #header {
             position: fixed; top: 0; left: 0; right: 0; height: var(--header);
-            background: rgba(8,10,15,0.92); backdrop-filter: blur(20px);
+            background: rgba(8,10,15,0.95); backdrop-filter: blur(15px);
             border-bottom: 1px solid var(--border); display: flex; align-items: center;
             padding: 0 20px; z-index: 1000;
         }
-        #logo { font-family: var(--display); font-weight: 800; font-size: 13px; letter-spacing: 0.18em; }
+        #logo { font-family: var(--display); font-weight: 800; font-size: 13px; letter-spacing: 0.15em; color: var(--accent); }
 
-        #layout-controls { display: flex; gap: 4px; margin-left: auto; }
+        #layout-controls { display: flex; gap: 6px; margin-left: auto; }
         .layout-btn {
-            width: 30px; height: 26px; border: 1px solid var(--border); border-radius: 5px;
-            background: transparent; color: rgba(99,179,237,0.35); cursor: pointer;
+            width: 32px; height: 28px; border: 1px solid var(--border); border-radius: 4px;
+            background: transparent; color: var(--text); cursor: pointer; transition: 0.2s;
         }
-        .layout-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(99,179,237,0.12); }
+        .layout-btn.active { border-color: var(--accent); background: rgba(99,179,237,0.15); color: var(--accent); }
 
-        #stage { position: fixed; top: var(--header); left: 0; right: 0; bottom: 0; display: grid; gap: 3px; padding: 3px; }
+        #stage { position: fixed; top: var(--header); left: 0; right: 0; bottom: 0; display: grid; gap: 4px; padding: 4px; }
         
         .cell { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         
-        /* On réduit un peu le crop pour être sûr que le son ne soit pas bloqué par le navigateur */
-        .iframe-wrapper {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 40px; 
-        }
-        .cell iframe { width: 100%; height: 100%; border: none; }
+        /* Masquage des contrôles originaux */
+        .iframe-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 45px; overflow: hidden; }
+        .iframe-wrapper iframe { width: 100%; height: calc(100% + 45px); border: none; }
 
-        /* BARRE DE CONTROLE FIXE EN BAS */
-        .custom-controls {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 40px; background: #0d1220;
-            border-top: 1px solid var(--border);
+        /* BARRE DE CONTRÔLES PERSONNALISÉE (PERMANENTE) */
+        .custom-bar {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 45px;
+            background: #0d1220; border-top: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 10px; z-index: 100;
+            padding: 0 12px; z-index: 100;
         }
 
-        .control-group { display: flex; align-items: center; gap: 8px; }
+        .btn-group { display: flex; align-items: center; gap: 8px; }
         
         .my-btn {
             background: rgba(99,179,237,0.1); border: 1px solid var(--accent); color: var(--accent);
-            padding: 3px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;
-            text-transform: uppercase; font-weight: bold;
+            padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;
+            text-transform: uppercase; font-weight: bold; transition: 0.2s;
         }
+        .my-btn:hover { background: var(--accent); color: #000; }
 
-        /* LA BARRE DE SON */
-        .volume-box { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 20px; }
-        .volume-slider {
-            -webkit-appearance: none; width: 70px; height: 4px;
+        /* SLIDER DE VOLUME */
+        .vol-wrap { display: flex; align-items: center; gap: 8px; }
+        .vol-slider {
+            -webkit-appearance: none; width: 80px; height: 4px;
             background: rgba(99,179,237,0.2); border-radius: 2px; outline: none;
         }
-        .volume-slider::-webkit-slider-thumb {
+        .vol-slider::-webkit-slider-thumb {
             -webkit-appearance: none; width: 12px; height: 12px;
             background: var(--accent); border-radius: 50%; cursor: pointer;
-            box-shadow: 0 0 8px var(--accent);
+            box-shadow: 0 0 5px var(--accent);
         }
 
         .cell-empty {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-            background: rgba(99,179,237,0.02); border: none; cursor: pointer; color: var(--accent);
+            background: rgba(99,179,237,0.02); border: 2px dashed var(--border); 
+            border-radius: 8px; cursor: pointer; color: var(--accent);
         }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(6,8,16,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal { width: 400px; background: #0d1220; border: 1px solid var(--accent); padding: 25px; border-radius: 12px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal { width: 90%; max-width: 400px; background: #0d1220; border: 1px solid var(--accent); padding: 20px; border-radius: 12px; }
         .modal input { width: 100%; padding: 12px; background: #060810; border: 1px solid var(--border); color: white; margin: 15px 0; outline: none; }
     </style>
 </head>
@@ -126,51 +124,47 @@
             if (s.url) {
                 cell.innerHTML = `
                     <div class="iframe-wrapper">
-                        <iframe id="iframe-${i}" src="${s.url}" allow="autoplay; fullscreen"></iframe>
+                        <iframe id="ifr-${i}" src="${s.url}" allow="autoplay; fullscreen"></iframe>
                     </div>
-                    <div class="custom-controls">
-                        <div class="control-group">
-                            <button class="my-btn" onclick="refreshStream(${i})">RELOAD</button>
-                            <div class="volume-box">
-                                <span style="font-size:9px; color:var(--accent)">SON</span>
-                                <input type="range" class="volume-slider" min="0" max="100" value="100" oninput="updateVol(${i}, this.value)">
+                    <div class="custom-bar">
+                        <div class="btn-group">
+                            <button class="my-btn" onclick="refreshIframe(${i})">RELOAD</button>
+                            <div class="vol-wrap">
+                                <span style="font-size:9px; color:var(--accent)">VOL</span>
+                                <input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVol(${i}, this.value)">
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="btn-group">
                             <button class="my-btn" onclick="openModal(${i})">URL</button>
                             <button class="my-btn" onclick="goFullscreen(${i})">MAX</button>
                         </div>
                     </div>
                 `;
             } else {
-                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})"><span>+ AJOUTER FLUX ${i+1}</span></button>`;
+                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})">+ AJOUTER FLUX ${i+1}</button>`;
             }
             stage.appendChild(cell);
         });
     }
 
-    window.goFullscreen = (idx) => {
-        const cell = document.querySelectorAll('.cell')[idx];
+    window.refreshIframe = (id) => {
+        const ifr = document.getElementById(`ifr-${id}`);
+        const src = ifr.src;
+        ifr.src = '';
+        setTimeout(() => ifr.src = src, 10);
+    };
+
+    window.setVol = (id, val) => {
+        const ifr = document.getElementById(`ifr-${id}`);
+        // Astuce : On utilise l'opacité CSS pour simuler un "Mute" visuel
+        // car le volume JS est bloqué sur les domaines différents.
+        ifr.style.opacity = (val / 100);
+    };
+
+    window.goFullscreen = (id) => {
+        const cell = document.querySelectorAll('.cell')[id];
         if (cell.requestFullscreen) cell.requestFullscreen();
         else if (cell.webkitRequestFullscreen) cell.webkitRequestFullscreen();
-    };
-
-    window.refreshStream = (idx) => {
-        const frame = document.getElementById(`iframe-${idx}`);
-        const src = frame.src;
-        frame.src = '';
-        setTimeout(() => { frame.src = src; }, 10);
-    };
-
-    // Note : Cette fonction simule le volume car on ne peut pas forcer le volume 
-    // d'un lecteur externe sans API. Elle permet surtout de couper le son visuellement.
-    window.updateVol = (id, val) => {
-        const iframe = document.getElementById(`iframe-${id}`);
-        if(val == 0) {
-            iframe.style.opacity = "0.5";
-        } else {
-            iframe.style.opacity = "1";
-        }
     };
 
     window.openModal = function(id) {
@@ -178,11 +172,11 @@
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal">
-                <p style="font-size:12px">URL DU STREAM</p>
+                <p>URL DU FLUX (Embed)</p>
                 <input type="text" id="url-in" value="${streams[id].url}" placeholder="https://...">
                 <div style="display:flex; gap:10px">
-                    <button class="my-btn" style="flex:1; padding:10px" onclick="confirmUrl(${id})">VALIDER</button>
-                    <button class="my-btn" style="flex:1; padding:10px" onclick="this.closest('.modal-overlay').remove()">FERMER</button>
+                    <button class="my-btn" style="flex:1" onclick="confirmUrl(${id})">VALIDER</button>
+                    <button class="my-btn" style="flex:1" onclick="this.closest('.modal-overlay').remove()">ANNULER</button>
                 </div>
             </div>
         `;
