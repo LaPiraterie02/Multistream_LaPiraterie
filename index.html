@@ -58,9 +58,8 @@
             color: var(--text);
             white-space: nowrap;
             display: flex; align-items: center; gap: 8px;
-            transition: 0.3s; /* Ajouté pour le glow */
+            transition: 0.3s;
         }
-        /* AJOUT : Effet Glow au survol */
         #logo:hover { color: var(--accent); text-shadow: 0 0 15px var(--accent); cursor: default; }
 
         #logo::before {
@@ -76,7 +75,6 @@
             50% { opacity: 0.5; transform: scale(0.8); }
         }
 
-        /* AJOUT : Bouton Panic Style */
         #panic-btn {
             background: transparent; border: 1px solid var(--danger);
             color: var(--danger); font-family: var(--mono); font-size: 9px;
@@ -112,7 +110,7 @@
             display: grid;
             gap: 3px;
             padding: 3px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Fluidité ajoutée ici */
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* ── CELL ── */
@@ -124,17 +122,19 @@
             overflow: hidden;
             transition: border-color 0.2s, transform 0.2s;
         }
+        /* CSS pour le mode plein écran natif */
+        .cell:fullscreen { border: none; border-radius: 0; padding: 0; }
+        .cell:-webkit-full-screen { border: none; border-radius: 0; padding: 0; }
+
         .cell:hover { border-color: rgba(99,179,237,0.3); }
         .cell iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* AJOUT : Point Live */
         .live-indicator {
             position: absolute; top: 10px; right: 10px; width: 6px; height: 6px;
             background: #ff4b4b; border-radius: 50%; box-shadow: 0 0 8px #ff4b4b;
             animation: pulse 1s infinite; z-index: 10; pointer-events: none;
         }
 
-        /* ── EMPTY STATE ── */
         .cell-empty {
             width: 100%; height: 100%;
             display: flex; flex-direction: column;
@@ -202,7 +202,6 @@
         .toolbar-btn:hover { background: rgba(99,179,237,0.15); border-color: var(--accent); }
         .toolbar-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
 
-        /* ── CELL NUMBER ── */
         .cell-num {
             position: absolute; top: 8px; left: 8px;
             font-family: var(--mono);
@@ -259,8 +258,6 @@
             transition: border-color 0.15s, background 0.15s;
         }
         .modal input:focus { border-color: var(--accent); background: rgba(99,179,237,0.08); }
-        .modal input::placeholder { color: rgba(99,179,237,0.25); }
-
         .modal-actions {
             display: flex; gap: 8px; margin-top: 12px;
         }
@@ -278,56 +275,8 @@
             color: var(--text);
         }
         .btn-primary { background: var(--accent); border-color: var(--accent); color: #060810; font-weight: 600; }
-        .btn-primary:hover { filter: brightness(1.1); }
         .btn-danger { color: var(--danger); border-color: rgba(252,129,129,0.2); }
-        .btn-danger:hover { background: var(--danger-dim); border-color: var(--danger); }
         .btn-ghost { color: var(--muted); flex: 0 0 44px; }
-        .btn-ghost:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-
-        .modal-hints {
-            margin-top: 14px; padding-top: 12px;
-            border-top: 1px solid rgba(99,179,237,0.08);
-            display: flex; flex-direction: column; gap: 5px;
-        }
-        .hint {
-            font-size: 9px;
-            color: rgba(99,179,237,0.3);
-            display: flex; align-items: center; gap: 6px;
-        }
-        .hint::before { content: '→'; color: var(--accent); opacity: 0.4; }
-
-        /* ── PLEIN ÉCRAN overlay ── */
-        .fullscreen-overlay {
-            position: fixed; inset: 0;
-            background: #000;
-            z-index: 8888;
-            display: flex; flex-direction: column;
-        }
-        .fullscreen-bar {
-            height: 40px; flex-shrink: 0;
-            background: rgba(6,8,16,0.95);
-            border-bottom: 1px solid rgba(99,179,237,0.12);
-            display: flex; align-items: center;
-            padding: 0 16px; gap: 12px;
-        }
-        .fullscreen-bar span {
-            font-family: var(--mono); font-size: 10px;
-            color: var(--accent); opacity: 0.6;
-            letter-spacing: 0.15em; text-transform: uppercase;
-        }
-        .fullscreen-bar button {
-            margin-left: auto;
-            height: 26px; padding: 0 12px;
-            border-radius: 5px;
-            border: 1px solid rgba(99,179,237,0.3);
-            background: rgba(6,8,16,0.8);
-            color: var(--accent);
-            font-family: var(--mono); font-size: 9px;
-            letter-spacing: 0.1em; text-transform: uppercase;
-            cursor: pointer; transition: all 0.15s;
-        }
-        .fullscreen-bar button:hover { background: rgba(99,179,237,0.15); border-color: var(--accent); }
-        .fullscreen-overlay iframe { flex: 1; border: none; width: 100%; }
     </style>
 </head>
 <body>
@@ -343,7 +292,7 @@
 <script>
 (function() {
     const COUNTS = [1,2,4,6];
-    let isMuted = false; // Pour le panic mode
+    let isMuted = false;
     let count = (() => {
         const saved = parseInt(localStorage.getItem('ms_count'));
         return [1,2,4,6].includes(saved) ? saved : 4;
@@ -357,10 +306,9 @@
     function save() {
         localStorage.setItem('ms_count', count);
         localStorage.setItem('ms_streams', JSON.stringify(streams));
-        updateTabTitle(); // AJOUT : Titre dynamique
+        updateTabTitle();
     }
 
-    // AJOUT : Titre dynamique avec nombre de streams
     function updateTabTitle() {
         const active = streams.filter(s => s.url).length;
         document.title = active > 0 ? `(${active}) MULTISTREAM` : "MULTISTREAM";
@@ -377,7 +325,6 @@
         return url;
     }
 
-    // AJOUT : Fonction Panic Mute
     window.toggleMuteAll = function() {
         isMuted = !isMuted;
         const btn = document.getElementById('panic-btn');
@@ -385,13 +332,16 @@
         btn.style.borderColor = isMuted ? "var(--accent)" : "var(--danger)";
         btn.style.color = isMuted ? "var(--accent)" : "var(--danger)";
         
-        streams.forEach(s => {
-            if(s.url) {
-                if(isMuted) s.url += (s.url.includes('?') ? '&muted=true' : '?muted=true');
-                else s.url = s.url.replace('&muted=true', '').replace('?muted=true', '');
+        // On applique le mute sur les iframes existantes pour un effet immédiat
+        document.querySelectorAll('iframe').forEach(iframe => {
+            let src = iframe.src;
+            if(isMuted) {
+                if(!src.includes('muted=true')) src += (src.includes('?') ? '&muted=true' : '?muted=true');
+            } else {
+                src = src.replace('&muted=true', '').replace('?muted=true', '');
             }
+            iframe.src = src;
         });
-        renderStage();
     }
 
     function getGridStyle() {
@@ -430,6 +380,7 @@
     function buildCell(s, i) {
         const cell = document.createElement('div');
         cell.className = 'cell';
+        cell.id = `cell-${i}`; // ID ajouté pour cibler la cellule
 
         const num = document.createElement('div');
         num.className = 'cell-num';
@@ -437,7 +388,6 @@
         cell.appendChild(num);
 
         if (s.url) {
-            // AJOUT : Point Live rouge
             const dot = document.createElement('div');
             dot.className = 'live-indicator';
             cell.appendChild(dot);
@@ -461,7 +411,8 @@
                 </button>
             `;
             toolbar.querySelector('[data-action="edit"]').onclick = () => openModal(s.id);
-            toolbar.querySelector('[data-action="expand"]').onclick = () => openFullscreen(s);
+            // MODIFICATION : Utilise la nouvelle fonction plein écran
+            toolbar.querySelector('[data-action="expand"]').onclick = () => goFullscreen(cell);
             cell.appendChild(toolbar);
         } else {
             const empty = document.createElement('button');
@@ -473,20 +424,33 @@
         return cell;
     }
 
-    function openFullscreen(s) {
-        const overlay = document.createElement('div');
-        overlay.className = 'fullscreen-overlay';
-        overlay.id = 'fs-overlay';
-        overlay.innerHTML = `
-            <div class="fullscreen-bar">
-                <span>Flux en plein écran</span>
-                <button id="fs-close">✕ Fermer (ESC)</button>
-            </div>
-            <iframe src="${s.url}" allowfullscreen allow="autoplay; fullscreen"></iframe>
-        `;
-        document.body.appendChild(overlay);
-        overlay.querySelector('#fs-close').onclick = () => overlay.remove();
+    // NOUVELLE FONCTION : Plein écran sans bug + Pause des autres
+    function goFullscreen(element) {
+        // 1. Mettre les autres en pause (on vide le src pour stopper le chargement/données)
+        const currentIframe = element.querySelector('iframe');
+        document.querySelectorAll('iframe').forEach(f => {
+            if (f !== currentIframe) {
+                f.dataset.savedSrc = f.src; // On sauvegarde l'URL
+                f.src = "about:blank";      // On coupe le flux
+            }
+        });
+
+        // 2. Lancer le plein écran natif sur la cellule
+        if (element.requestFullscreen) element.requestFullscreen();
+        else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
     }
+
+    // ÉCOUTEUR : Détecte quand on quitte le plein écran pour relancer les autres
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            document.querySelectorAll('iframe').forEach(f => {
+                if (f.dataset.savedSrc) {
+                    f.src = f.dataset.savedSrc; // On remet le stream
+                    delete f.dataset.savedSrc;
+                }
+            });
+        }
+    });
 
     function openModal(id) {
         document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
@@ -516,12 +480,10 @@
         input.onkeydown = e => { if (e.key === 'Enter') commit(input.value); if (e.key === 'Escape') overlay.remove(); };
     }
 
-    // AJOUT : Raccourcis Clavier (1, 2, 4, 6 et Echap)
     document.addEventListener('keydown', (e) => {
         if (document.querySelector('input:focus')) return;
         if (['1','2','4','6'].includes(e.key)) { count = parseInt(e.key); save(); renderAll(); }
         if (e.key === 'Escape') {
-            const fs = document.getElementById('fs-overlay'); if (fs) fs.remove();
             const modal = document.querySelector('.modal-overlay'); if (modal) modal.remove();
         }
     });
