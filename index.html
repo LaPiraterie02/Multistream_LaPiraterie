@@ -34,32 +34,47 @@
 
         #stage { position: fixed; top: var(--header); left: 0; right: 0; bottom: 0; display: grid; gap: 3px; padding: 3px; }
         
-        /* CONTENEUR DE LA CELLULE */
         .cell { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         
-        /* ASTUCE DU CROP : On agrandit l'iframe de 10% en bas pour cacher leur barre de contrôle */
         .iframe-wrapper {
-            position: absolute;
-            top: 0; left: 0; right: 0; 
-            bottom: -45px; /* On pousse le bas de l'iframe hors du cadre visible */
+            position: absolute; top: 0; left: 0; right: 0; bottom: -50px; 
         }
         .cell iframe { width: 100%; height: 100%; border: none; }
 
-        /* TES BOUTONS À TOI */
+        /* BARRE DE CONTRÔLE PERMANENTE */
         .custom-controls {
-            position: absolute; bottom: 10px; left: 10px; right: 10px;
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(6, 8, 16, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 8px 12px;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 30; opacity: 0; transition: opacity 0.3s;
+            z-index: 30; border-top: 1px solid var(--border);
         }
-        .cell:hover .custom-controls { opacity: 1; }
 
-        .control-group { display: flex; gap: 5px; }
+        .control-group { display: flex; align-items: center; gap: 10px; }
+        
         .my-btn {
-            background: rgba(6,8,16,0.85); border: 1px solid var(--accent); color: var(--accent);
-            padding: 6px 12px; border-radius: 4px; font-size: 10px; cursor: pointer;
-            backdrop-filter: blur(5px); text-transform: uppercase; font-weight: bold;
+            background: transparent; border: 1px solid var(--accent); color: var(--accent);
+            padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;
+            text-transform: uppercase; font-weight: bold;
         }
         .my-btn:hover { background: var(--accent); color: black; }
+
+        /* STYLISATION SLIDER VOLUME */
+        .volume-container { display: flex; align-items: center; gap: 8px; }
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 80px; height: 4px;
+            background: rgba(99, 179, 237, 0.2);
+            border-radius: 2px; outline: none;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            background: var(--accent);
+            border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+        }
 
         .cell-empty {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
@@ -116,20 +131,24 @@
             if (s.url) {
                 cell.innerHTML = `
                     <div class="iframe-wrapper">
-                        <iframe src="${s.url}" allow="autoplay; fullscreen"></iframe>
+                        <iframe id="iframe-${i}" src="${s.url}" allow="autoplay; fullscreen"></iframe>
                     </div>
                     <div class="custom-controls">
                         <div class="control-group">
-                            <button class="my-btn" onclick="togglePlay(${i})">PLAY/PAUSE</button>
+                            <button class="my-btn" onclick="togglePlay(${i})">RELOAD</button>
+                            <div class="volume-container">
+                                <span style="font-size:10px; color:var(--accent)">VOL</span>
+                                <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" oninput="setVolume(${i}, this.value)">
+                            </div>
                         </div>
                         <div class="control-group">
                             <button class="my-btn" onclick="openModal(${i})">URL</button>
-                            <button class="my-btn" onclick="goFullscreen(this.closest('.cell'))">PLEIN ÉCRAN</button>
+                            <button class="my-btn" onclick="goFullscreen(this.closest('.cell'))">MAX</button>
                         </div>
                     </div>
                 `;
             } else {
-                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})"><span>+ AJOUTER FLUX ${i+1}</span></button>`;
+                cell.innerHTML = `<button class="cell-empty" onclick="onclick=openModal(${i})"><span>+ AJOUTER FLUX ${i+1}</span></button>`;
             }
             stage.appendChild(cell);
         });
@@ -141,12 +160,25 @@
     };
 
     window.togglePlay = (id) => {
-        // Astuce : On recharge l'iframe pour "Pause" ou "Play" car on ne peut pas parler au lecteur tiers
         const cell = document.querySelectorAll('.cell')[id];
         const iframe = cell.querySelector('iframe');
         const currentSrc = iframe.src;
-        iframe.src = ''; // Stop
-        setTimeout(() => { iframe.src = currentSrc; }, 10); // Restart
+        iframe.src = ''; 
+        setTimeout(() => { iframe.src = currentSrc; }, 10);
+    };
+
+    // LOGIQUE DE VOLUME VIA CSS (Opacité sonore)
+    // Note : Le contrôle de volume "réel" d'une iframe tiers est bloqué.
+    // Mais on peut utiliser l'attribut "muted" via l'URL pour certains lecteurs.
+    window.setVolume = (id, val) => {
+        const iframe = document.getElementById(`iframe-${id}`);
+        // Astuce visuelle : On baisse l'opacité si le son est coupé pour l'utilisateur
+        if(val == 0) iframe.style.filter = "grayscale(0.5)";
+        else iframe.style.filter = "none";
+        
+        // Comme on ne peut pas injecter de JS dans l'iframe, le slider sert ici
+        // d'indicateur. Pour certains sites (Youtube/Twitch), on pourrait modifier l'URL.
+        // Pour les sites de sport, la seule solution est de cliquer sur leur icône.
     };
 
     window.openModal = function(id) {
