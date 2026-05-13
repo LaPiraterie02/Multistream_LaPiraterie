@@ -58,7 +58,11 @@
             color: var(--text);
             white-space: nowrap;
             display: flex; align-items: center; gap: 8px;
+            transition: 0.3s; /* Ajouté pour le glow */
         }
+        /* AJOUT : Effet Glow au survol */
+        #logo:hover { color: var(--accent); text-shadow: 0 0 15px var(--accent); cursor: default; }
+
         #logo::before {
             content: '';
             width: 6px; height: 6px;
@@ -71,6 +75,15 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(0.8); }
         }
+
+        /* AJOUT : Bouton Panic Style */
+        #panic-btn {
+            background: transparent; border: 1px solid var(--danger);
+            color: var(--danger); font-family: var(--mono); font-size: 9px;
+            padding: 4px 10px; border-radius: 5px; cursor: pointer;
+            text-transform: uppercase; transition: 0.2s;
+        }
+        #panic-btn:hover { background: var(--danger-dim); }
 
         #layout-controls {
             display: flex; align-items: center; gap: 4px;
@@ -99,7 +112,7 @@
             display: grid;
             gap: 3px;
             padding: 3px;
-            transition: grid-template-columns 0.3s ease, grid-template-rows 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Fluidité ajoutée ici */
         }
 
         /* ── CELL ── */
@@ -109,10 +122,17 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, transform 0.2s;
         }
         .cell:hover { border-color: rgba(99,179,237,0.3); }
         .cell iframe { width: 100%; height: 100%; border: none; display: block; }
+
+        /* AJOUT : Point Live */
+        .live-indicator {
+            position: absolute; top: 10px; right: 10px; width: 6px; height: 6px;
+            background: #ff4b4b; border-radius: 50%; box-shadow: 0 0 8px #ff4b4b;
+            animation: pulse 1s infinite; z-index: 10; pointer-events: none;
+        }
 
         /* ── EMPTY STATE ── */
         .cell-empty {
@@ -198,7 +218,7 @@
         }
         .cell:hover .cell-num { opacity: 1; }
 
-        /* ── MODAL (fixed, centré sur l'écran) ── */
+        /* ── MODAL ── */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(6,8,16,0.88);
@@ -313,7 +333,8 @@
 <body>
 
 <header id="header">
-    <div id="logo">MULTISTREAM</div>
+    <div id="logo">⚓ LA PIRATERIE</div>
+    <button id="panic-btn" onclick="toggleMuteAll()">Panic: Mute All</button>
     <div id="layout-controls"></div>
 </header>
 
@@ -322,6 +343,7 @@
 <script>
 (function() {
     const COUNTS = [1,2,4,6];
+    let isMuted = false; // Pour le panic mode
     let count = (() => {
         const saved = parseInt(localStorage.getItem('ms_count'));
         return [1,2,4,6].includes(saved) ? saved : 4;
@@ -330,12 +352,18 @@
         try { return JSON.parse(localStorage.getItem('ms_streams')) || []; } catch { return []; }
     })();
 
-    // Ensure 6 slots
     while (streams.length < 6) streams.push({ id: streams.length, url: '' });
 
     function save() {
         localStorage.setItem('ms_count', count);
         localStorage.setItem('ms_streams', JSON.stringify(streams));
+        updateTabTitle(); // AJOUT : Titre dynamique
+    }
+
+    // AJOUT : Titre dynamique avec nombre de streams
+    function updateTabTitle() {
+        const active = streams.filter(s => s.url).length;
+        document.title = active > 0 ? `(${active}) MULTISTREAM` : "MULTISTREAM";
     }
 
     function cleanUrl(url) {
@@ -349,19 +377,33 @@
         return url;
     }
 
+    // AJOUT : Fonction Panic Mute
+    window.toggleMuteAll = function() {
+        isMuted = !isMuted;
+        const btn = document.getElementById('panic-btn');
+        btn.textContent = isMuted ? "Unmute All" : "Panic: Mute All";
+        btn.style.borderColor = isMuted ? "var(--accent)" : "var(--danger)";
+        btn.style.color = isMuted ? "var(--accent)" : "var(--danger)";
+        
+        streams.forEach(s => {
+            if(s.url) {
+                if(isMuted) s.url += (s.url.includes('?') ? '&muted=true' : '?muted=true');
+                else s.url = s.url.replace('&muted=true', '').replace('?muted=true', '');
+            }
+        });
+        renderStage();
+    }
+
     function getGridStyle() {
         const styles = {
             1: { cols: '1fr', rows: '1fr' },
             2: { cols: '1fr 1fr', rows: '1fr' },
-            3: { cols: '1fr 1fr 1fr', rows: '1fr' },
             4: { cols: '1fr 1fr', rows: '1fr 1fr' },
-            5: { cols: '1fr 1fr 1fr', rows: '1fr 1fr' },
             6: { cols: '1fr 1fr 1fr', rows: '1fr 1fr' },
         };
         return styles[count] || styles[4];
     }
 
-    // ── LAYOUT CONTROLS ──
     function renderControls() {
         const el = document.getElementById('layout-controls');
         el.innerHTML = '';
@@ -374,7 +416,6 @@
         });
     }
 
-    // ── STAGE ──
     function renderStage() {
         const stage = document.getElementById('stage');
         const { cols, rows } = getGridStyle();
@@ -396,13 +437,17 @@
         cell.appendChild(num);
 
         if (s.url) {
+            // AJOUT : Point Live rouge
+            const dot = document.createElement('div');
+            dot.className = 'live-indicator';
+            cell.appendChild(dot);
+
             const iframe = document.createElement('iframe');
             iframe.src = s.url;
             iframe.allowFullscreen = true;
             iframe.allow = 'autoplay; fullscreen';
             cell.appendChild(iframe);
 
-            // Toolbar bottom
             const toolbar = document.createElement('div');
             toolbar.className = 'cell-toolbar';
             toolbar.innerHTML = `
@@ -425,80 +470,63 @@
             empty.onclick = () => openModal(s.id);
             cell.appendChild(empty);
         }
-
         return cell;
     }
 
     function openFullscreen(s) {
-        const existing = document.getElementById('fs-overlay');
-        if (existing) existing.remove();
-
         const overlay = document.createElement('div');
         overlay.className = 'fullscreen-overlay';
         overlay.id = 'fs-overlay';
         overlay.innerHTML = `
             <div class="fullscreen-bar">
                 <span>Flux en plein écran</span>
-                <button id="fs-close">✕ Fermer</button>
+                <button id="fs-close">✕ Fermer (ESC)</button>
             </div>
             <iframe src="${s.url}" allowfullscreen allow="autoplay; fullscreen"></iframe>
         `;
         document.body.appendChild(overlay);
         overlay.querySelector('#fs-close').onclick = () => overlay.remove();
-        document.addEventListener('keydown', function esc(e) {
-            if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); }
-        });
     }
 
     function openModal(id) {
         document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
-
         const stream = streams.find(s => s.id === id);
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal">
                 <p class="modal-label">Flux ${String(id + 1).padStart(2, '0')} — URL du stream</p>
-                <input id="url-input" type="text" placeholder="https://… YouTube, Twitch, ou lien direct" value="${stream?.url || ''}">
+                <input id="url-input" type="text" placeholder="https://…" value="${stream?.url || ''}">
                 <div class="modal-actions">
                     <button class="btn btn-primary" id="btn-ok">Valider</button>
                     <button class="btn btn-danger" id="btn-clear">Vider</button>
                     <button class="btn btn-ghost" id="btn-cancel">✕</button>
                 </div>
-                <div class="modal-hints">
-                    <div class="hint">youtube.com/watch?v=… converti automatiquement</div>
-                    <div class="hint">twitch.tv/channel converti automatiquement</div>
-                    <div class="hint">Entrée pour valider · Échap pour annuler</div>
-                </div>
             </div>
         `;
         document.body.appendChild(overlay);
-
         const input = overlay.querySelector('#url-input');
         input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
 
-        function commit(val) {
-            const s = streams.find(s => s.id === id);
-            if (s) s.url = cleanUrl(val);
-            save(); renderAll();
-        }
-
+        const commit = (val) => { streams.find(s => s.id === id).url = cleanUrl(val); save(); renderAll(); overlay.remove(); };
         overlay.querySelector('#btn-ok').onclick = () => commit(input.value);
         overlay.querySelector('#btn-clear').onclick = () => commit('');
         overlay.querySelector('#btn-cancel').onclick = () => overlay.remove();
-        overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-        input.onkeydown = e => {
-            if (e.key === 'Enter') commit(input.value);
-            if (e.key === 'Escape') overlay.remove();
-        };
+        overlay.onclick = e => e.target === overlay && overlay.remove();
+        input.onkeydown = e => { if (e.key === 'Enter') commit(input.value); if (e.key === 'Escape') overlay.remove(); };
     }
 
-    function renderAll() {
-        renderControls();
-        renderStage();
-    }
+    // AJOUT : Raccourcis Clavier (1, 2, 4, 6 et Echap)
+    document.addEventListener('keydown', (e) => {
+        if (document.querySelector('input:focus')) return;
+        if (['1','2','4','6'].includes(e.key)) { count = parseInt(e.key); save(); renderAll(); }
+        if (e.key === 'Escape') {
+            const fs = document.getElementById('fs-overlay'); if (fs) fs.remove();
+            const modal = document.querySelector('.modal-overlay'); if (modal) modal.remove();
+        }
+    });
 
+    function renderAll() { renderControls(); renderStage(); updateTabTitle(); }
     renderAll();
 })();
 </script>
