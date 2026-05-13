@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MULTISTREAM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@800&display=swap" rel="stylesheet">
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,8 +17,6 @@
         html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); }
         body { background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(99,179,237,0.08) 0%, transparent 60%); }
         
-        ::-webkit-scrollbar { display: none; }
-
         #header {
             position: fixed; top: 0; left: 0; right: 0; height: var(--header);
             background: rgba(8,10,15,0.92); backdrop-filter: blur(20px);
@@ -30,44 +28,47 @@
         #layout-controls { display: flex; gap: 4px; margin-left: auto; }
         .layout-btn {
             width: 30px; height: 26px; border: 1px solid var(--border); border-radius: 5px;
-            background: transparent; color: rgba(99,179,237,0.35); cursor: pointer; font-family: var(--mono);
+            background: transparent; color: rgba(99,179,237,0.35); cursor: pointer;
         }
         .layout-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(99,179,237,0.12); }
 
         #stage { position: fixed; top: var(--header); left: 0; right: 0; bottom: 0; display: grid; gap: 3px; padding: 3px; }
         
+        /* CONTENEUR DE LA CELLULE */
         .cell { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-        .cell:fullscreen { border: none; border-radius: 0; }
+        
+        /* ASTUCE DU CROP : On agrandit l'iframe de 10% en bas pour cacher leur barre de contrôle */
+        .iframe-wrapper {
+            position: absolute;
+            top: 0; left: 0; right: 0; 
+            bottom: -45px; /* On pousse le bas de l'iframe hors du cadre visible */
+        }
         .cell iframe { width: 100%; height: 100%; border: none; }
 
-        /* Le BOUCLIER anti-pub pour le plein écran */
-        .cell-shield {
-            position: absolute; inset: 0; z-index: 10;
-            background: transparent; cursor: pointer;
+        /* TES BOUTONS À TOI */
+        .custom-controls {
+            position: absolute; bottom: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 30; opacity: 0; transition: opacity 0.3s;
         }
+        .cell:hover .custom-controls { opacity: 1; }
 
-        .cell-toolbar {
-            position: absolute; top: 10px; right: 10px; z-index: 20;
-            opacity: 0; transition: opacity 0.2s;
+        .control-group { display: flex; gap: 5px; }
+        .my-btn {
+            background: rgba(6,8,16,0.85); border: 1px solid var(--accent); color: var(--accent);
+            padding: 6px 12px; border-radius: 4px; font-size: 10px; cursor: pointer;
+            backdrop-filter: blur(5px); text-transform: uppercase; font-weight: bold;
         }
-        .cell:hover .cell-toolbar { opacity: 1; }
-        .toolbar-btn {
-            background: rgba(6,8,16,0.8); border: 1px solid var(--accent); color: var(--accent);
-            padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer; text-transform: uppercase;
-        }
+        .my-btn:hover { background: var(--accent); color: black; }
 
         .cell-empty {
-            width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; background: rgba(99,179,237,0.02); border: none; cursor: pointer; color: var(--accent);
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            background: rgba(99,179,237,0.02); border: none; cursor: pointer; color: var(--accent);
         }
-        .plus-icon { width: 40px; height: 40px; border: 1px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 10px; }
-        
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(6,8,16,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal { width: 450px; background: #0d1220; border: 1px solid var(--accent); padding: 25px; border-radius: 12px; }
-        .modal input { width: 100%; padding: 12px; background: #060810; border: 1px solid var(--border); color: white; margin: 15px 0; outline: none; font-family: var(--mono); font-size: 12px; }
-        .modal-actions { display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; font-family: var(--mono); font-size: 10px; background: transparent; color: white; border: 1px solid var(--border); }
-        .btn-primary { background: var(--accent); color: black; border: none; font-weight: bold; }
+        .modal { width: 400px; background: #0d1220; border: 1px solid var(--accent); padding: 25px; border-radius: 12px; }
+        .modal input { width: 100%; padding: 12px; background: #060810; border: 1px solid var(--border); color: white; margin: 15px 0; outline: none; }
     </style>
 </head>
 <body>
@@ -113,61 +114,59 @@
             const cell = document.createElement('div');
             cell.className = 'cell';
             if (s.url) {
-                const iframe = document.createElement('iframe');
-                iframe.src = s.url;
-                iframe.allow = "autoplay; fullscreen";
-                cell.appendChild(iframe);
-
-                const shield = document.createElement('div');
-                shield.className = 'cell-shield';
-                
-                // DOUBLE CLIC : Plein écran natif (Zéro coupure, Zéro refresh)
-                shield.ondblclick = () => {
-                    if (cell.requestFullscreen) cell.requestFullscreen();
-                    else if (cell.webkitRequestFullscreen) cell.webkitRequestFullscreen();
-                };
-
-                // CLIC SIMPLE : On laisse passer vers l'iframe pour le bouton Play
-                shield.onclick = () => {
-                    shield.style.pointerEvents = 'none';
-                    setTimeout(() => { shield.style.pointerEvents = 'auto'; }, 1000);
-                };
-
-                cell.appendChild(shield);
-
-                const toolbar = document.createElement('div');
-                toolbar.className = 'cell-toolbar';
-                toolbar.innerHTML = `<button class="toolbar-btn" onclick="openModal(${i})">URL</button>`;
-                cell.appendChild(toolbar);
+                cell.innerHTML = `
+                    <div class="iframe-wrapper">
+                        <iframe src="${s.url}" allow="autoplay; fullscreen"></iframe>
+                    </div>
+                    <div class="custom-controls">
+                        <div class="control-group">
+                            <button class="my-btn" onclick="togglePlay(${i})">PLAY/PAUSE</button>
+                        </div>
+                        <div class="control-group">
+                            <button class="my-btn" onclick="openModal(${i})">URL</button>
+                            <button class="my-btn" onclick="goFullscreen(this.closest('.cell'))">PLEIN ÉCRAN</button>
+                        </div>
+                    </div>
+                `;
             } else {
-                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})"><div class="plus-icon">+</div><span>AJOUTER FLUX ${i+1}</span></button>`;
+                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})"><span>+ AJOUTER FLUX ${i+1}</span></button>`;
             }
             stage.appendChild(cell);
         });
     }
+
+    window.goFullscreen = (el) => {
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    };
+
+    window.togglePlay = (id) => {
+        // Astuce : On recharge l'iframe pour "Pause" ou "Play" car on ne peut pas parler au lecteur tiers
+        const cell = document.querySelectorAll('.cell')[id];
+        const iframe = cell.querySelector('iframe');
+        const currentSrc = iframe.src;
+        iframe.src = ''; // Stop
+        setTimeout(() => { iframe.src = currentSrc; }, 10); // Restart
+    };
 
     window.openModal = function(id) {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal">
-                <p style="font-size:10px; opacity:0.6">LIEN DU STREAM (EX: EMBEDSPORTS)</p>
+                <p>LIEN DU FLUX</p>
                 <input type="text" id="url-in" value="${streams[id].url}" placeholder="https://...">
-                <div class="modal-actions">
-                    <button class="btn btn-primary" onclick="confirmUrl(${id})">VALIDER</button>
-                    <button class="btn" onclick="this.closest('.modal-overlay').remove()">ANNULER</button>
+                <div style="display:flex; gap:10px">
+                    <button class="my-btn" style="flex:1" onclick="confirmUrl(${id})">VALIDER</button>
+                    <button class="my-btn" style="flex:1" onclick="this.closest('.modal-overlay').remove()">FERMER</button>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
-        const input = document.getElementById('url-in');
-        input.focus();
-        input.onkeydown = e => { if(e.key === 'Enter') confirmUrl(id); };
     };
 
     window.confirmUrl = function(id) {
-        let val = document.getElementById('url-in').value.trim();
-        streams[id].url = val;
+        streams[id].url = document.getElementById('url-in').value.trim();
         save(); renderAll();
         document.querySelector('.modal-overlay').remove();
     };
