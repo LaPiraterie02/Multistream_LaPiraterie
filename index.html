@@ -10,7 +10,7 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --bg: #060810; --surface: #0a0d16; --border: rgba(99,179,237,0.12);
+            --bg: #060810; --surface: #0a0d16; --border: rgba(99,179,237,0.2);
             --text: #a8d4f5; --accent: #63b3ed; --header: 48px;
             --mono: 'DM Mono', monospace; --display: 'Syne', sans-serif;
         }
@@ -36,44 +36,39 @@
         
         .cell { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         
+        /* On réduit un peu le crop pour être sûr que le son ne soit pas bloqué par le navigateur */
         .iframe-wrapper {
-            position: absolute; top: 0; left: 0; right: 0; bottom: -50px; 
+            position: absolute; top: 0; left: 0; right: 0; bottom: 40px; 
         }
         .cell iframe { width: 100%; height: 100%; border: none; }
 
-        /* BARRE DE CONTRÔLE PERMANENTE */
+        /* BARRE DE CONTROLE FIXE EN BAS */
         .custom-controls {
             position: absolute; bottom: 0; left: 0; right: 0;
-            background: rgba(6, 8, 16, 0.85);
-            backdrop-filter: blur(10px);
-            padding: 8px 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 30; border-top: 1px solid var(--border);
+            height: 40px; background: #0d1220;
+            border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; z-index: 100;
         }
 
-        .control-group { display: flex; align-items: center; gap: 10px; }
+        .control-group { display: flex; align-items: center; gap: 8px; }
         
         .my-btn {
-            background: transparent; border: 1px solid var(--accent); color: var(--accent);
-            padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;
+            background: rgba(99,179,237,0.1); border: 1px solid var(--accent); color: var(--accent);
+            padding: 3px 8px; border-radius: 4px; font-size: 9px; cursor: pointer;
             text-transform: uppercase; font-weight: bold;
         }
-        .my-btn:hover { background: var(--accent); color: black; }
 
-        /* STYLISATION SLIDER VOLUME */
-        .volume-container { display: flex; align-items: center; gap: 8px; }
+        /* LA BARRE DE SON */
+        .volume-box { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 20px; }
         .volume-slider {
-            -webkit-appearance: none;
-            width: 80px; height: 4px;
-            background: rgba(99, 179, 237, 0.2);
-            border-radius: 2px; outline: none;
+            -webkit-appearance: none; width: 70px; height: 4px;
+            background: rgba(99,179,237,0.2); border-radius: 2px; outline: none;
         }
         .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 12px; height: 12px;
-            background: var(--accent);
-            border-radius: 50%; cursor: pointer;
-            box-shadow: 0 0 10px var(--accent);
+            -webkit-appearance: none; width: 12px; height: 12px;
+            background: var(--accent); border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 8px var(--accent);
         }
 
         .cell-empty {
@@ -135,50 +130,47 @@
                     </div>
                     <div class="custom-controls">
                         <div class="control-group">
-                            <button class="my-btn" onclick="togglePlay(${i})">RELOAD</button>
-                            <div class="volume-container">
-                                <span style="font-size:10px; color:var(--accent)">VOL</span>
-                                <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" oninput="setVolume(${i}, this.value)">
+                            <button class="my-btn" onclick="refreshStream(${i})">RELOAD</button>
+                            <div class="volume-box">
+                                <span style="font-size:9px; color:var(--accent)">SON</span>
+                                <input type="range" class="volume-slider" min="0" max="100" value="100" oninput="updateVol(${i}, this.value)">
                             </div>
                         </div>
                         <div class="control-group">
                             <button class="my-btn" onclick="openModal(${i})">URL</button>
-                            <button class="my-btn" onclick="goFullscreen(this.closest('.cell'))">MAX</button>
+                            <button class="my-btn" onclick="goFullscreen(${i})">MAX</button>
                         </div>
                     </div>
                 `;
             } else {
-                cell.innerHTML = `<button class="cell-empty" onclick="onclick=openModal(${i})"><span>+ AJOUTER FLUX ${i+1}</span></button>`;
+                cell.innerHTML = `<button class="cell-empty" onclick="openModal(${i})"><span>+ AJOUTER FLUX ${i+1}</span></button>`;
             }
             stage.appendChild(cell);
         });
     }
 
-    window.goFullscreen = (el) => {
-        if (el.requestFullscreen) el.requestFullscreen();
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    window.goFullscreen = (idx) => {
+        const cell = document.querySelectorAll('.cell')[idx];
+        if (cell.requestFullscreen) cell.requestFullscreen();
+        else if (cell.webkitRequestFullscreen) cell.webkitRequestFullscreen();
     };
 
-    window.togglePlay = (id) => {
-        const cell = document.querySelectorAll('.cell')[id];
-        const iframe = cell.querySelector('iframe');
-        const currentSrc = iframe.src;
-        iframe.src = ''; 
-        setTimeout(() => { iframe.src = currentSrc; }, 10);
+    window.refreshStream = (idx) => {
+        const frame = document.getElementById(`iframe-${idx}`);
+        const src = frame.src;
+        frame.src = '';
+        setTimeout(() => { frame.src = src; }, 10);
     };
 
-    // LOGIQUE DE VOLUME VIA CSS (Opacité sonore)
-    // Note : Le contrôle de volume "réel" d'une iframe tiers est bloqué.
-    // Mais on peut utiliser l'attribut "muted" via l'URL pour certains lecteurs.
-    window.setVolume = (id, val) => {
+    // Note : Cette fonction simule le volume car on ne peut pas forcer le volume 
+    // d'un lecteur externe sans API. Elle permet surtout de couper le son visuellement.
+    window.updateVol = (id, val) => {
         const iframe = document.getElementById(`iframe-${id}`);
-        // Astuce visuelle : On baisse l'opacité si le son est coupé pour l'utilisateur
-        if(val == 0) iframe.style.filter = "grayscale(0.5)";
-        else iframe.style.filter = "none";
-        
-        // Comme on ne peut pas injecter de JS dans l'iframe, le slider sert ici
-        // d'indicateur. Pour certains sites (Youtube/Twitch), on pourrait modifier l'URL.
-        // Pour les sites de sport, la seule solution est de cliquer sur leur icône.
+        if(val == 0) {
+            iframe.style.opacity = "0.5";
+        } else {
+            iframe.style.opacity = "1";
+        }
     };
 
     window.openModal = function(id) {
@@ -186,11 +178,11 @@
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal">
-                <p>LIEN DU FLUX</p>
+                <p style="font-size:12px">URL DU STREAM</p>
                 <input type="text" id="url-in" value="${streams[id].url}" placeholder="https://...">
                 <div style="display:flex; gap:10px">
-                    <button class="my-btn" style="flex:1" onclick="confirmUrl(${id})">VALIDER</button>
-                    <button class="my-btn" style="flex:1" onclick="this.closest('.modal-overlay').remove()">FERMER</button>
+                    <button class="my-btn" style="flex:1; padding:10px" onclick="confirmUrl(${id})">VALIDER</button>
+                    <button class="my-btn" style="flex:1; padding:10px" onclick="this.closest('.modal-overlay').remove()">FERMER</button>
                 </div>
             </div>
         `;
