@@ -1,503 +1,77 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>MULTISTREAM</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@800&display=swap" rel="stylesheet">
-
-<style>
-
-*,
-*::before,
-*::after{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-}
-
-:root{
-    --bg:#060810;
-    --surface:#0a0d16;
-    --border:rgba(99,179,237,0.15);
-    --accent:#63b3ed;
-    --text:#a8d4f5;
-
-    --header:48px;
-
-    --mono:'DM Mono', monospace;
-    --display:'Syne', sans-serif;
-}
-
-html,
-body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-
-    background:var(--bg);
-    color:var(--text);
-
-    font-family:var(--mono);
-}
-
-#header{
-    position:fixed;
-
+.iframe-cover-top{
+    position:absolute;
     top:0;
     left:0;
     right:0;
 
-    height:var(--header);
+    height:70px;
 
-    background:rgba(8,10,15,0.95);
-    backdrop-filter:blur(15px);
+    background:#000;
 
-    border-bottom:1px solid var(--border);
-
-    display:flex;
-    align-items:center;
-
-    padding:0 20px;
-
-    z-index:5000;
+    z-index:50;
+    pointer-events:none;
 }
 
-#logo{
-    font-family:var(--display);
-    font-size:13px;
-    font-weight:800;
-
-    letter-spacing:.15em;
-
-    color:var(--accent);
-}
-
-#layout-controls{
-    display:flex;
-    gap:6px;
-
-    margin-left:auto;
-}
-
-.layout-btn{
-    width:32px;
-    height:28px;
-
-    border:1px solid var(--border);
-    border-radius:4px;
-
-    background:transparent;
-    color:var(--text);
-
-    cursor:pointer;
-
-    transition:.2s;
-}
-
-.layout-btn:hover{
-    border-color:var(--accent);
-    color:var(--accent);
-}
-
-.layout-btn.active{
-    border-color:var(--accent);
-    background:rgba(99,179,237,.15);
-    color:var(--accent);
-}
-
-#stage{
-    position:fixed;
-
-    top:var(--header);
+.iframe-cover-bottom{
+    position:absolute;
+    bottom:0;
     left:0;
     right:0;
-    bottom:0;
 
-    display:grid;
-
-    gap:4px;
-    padding:4px;
-}
-
-.cell{
-    position:relative;
-
-    overflow:hidden;
+    height:70px;
 
     background:#000;
 
-    border:1px solid var(--border);
-    border-radius:8px;
+    z-index:50;
+    pointer-events:none;
 }
 
-iframe{
+.iframe-cover-left{
     position:absolute;
-
-    top:-55px;
+    top:0;
+    bottom:0;
     left:0;
 
-    width:100%;
-    height:calc(100% + 110px);
-
-    border:none;
+    width:60px;
 
     background:#000;
+
+    z-index:50;
+    pointer-events:none;
 }
 
-.settings-btn{
+.iframe-cover-right{
+    position:absolute;
+    top:0;
+    bottom:0;
+    right:0;
+
+    width:60px;
+
+    background:#000;
+
+    z-index:50;
+    pointer-events:none;
+}
+
+/* cache bouton play central */
+
+.iframe-center-block{
     position:absolute;
 
-    top:10px;
-    right:10px;
+    top:50%;
+    left:50%;
 
-    width:38px;
-    height:38px;
+    width:120px;
+    height:120px;
 
-    border:none;
-    border-radius:10px;
+    transform:translate(-50%,-50%);
 
-    background:rgba(0,0,0,.65);
-    backdrop-filter:blur(10px);
+    border-radius:50%;
 
-    color:white;
+    background:transparent;
 
-    font-size:18px;
+    z-index:50;
 
-    cursor:pointer;
-
-    z-index:200;
-
-    opacity:0;
-
-    transition:.2s;
+    pointer-events:none;
 }
-
-.cell:hover .settings-btn{
-    opacity:1;
-}
-
-.settings-btn:hover{
-    transform:scale(1.08);
-}
-
-.cell-empty{
-    width:100%;
-    height:100%;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border:2px dashed var(--border);
-
-    background:rgba(99,179,237,.03);
-
-    color:var(--accent);
-
-    cursor:pointer;
-}
-
-/* MODAL */
-
-.modal-overlay{
-    position:fixed;
-    inset:0;
-
-    background:rgba(0,0,0,.8);
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    z-index:99999;
-}
-
-.modal{
-    width:90%;
-    max-width:420px;
-
-    background:#0d1220;
-
-    border:1px solid var(--accent);
-    border-radius:12px;
-
-    padding:20px;
-}
-
-.modal input{
-    width:100%;
-
-    padding:12px;
-
-    margin:15px 0;
-
-    background:#060810;
-
-    border:1px solid var(--border);
-
-    color:white;
-
-    outline:none;
-}
-
-.modal-buttons{
-    display:flex;
-    gap:10px;
-}
-
-.modal-btn{
-    flex:1;
-
-    padding:10px;
-
-    border:none;
-    border-radius:6px;
-
-    background:rgba(99,179,237,.15);
-
-    color:var(--accent);
-
-    cursor:pointer;
-
-    transition:.2s;
-}
-
-.modal-btn:hover{
-    background:var(--accent);
-    color:#000;
-}
-
-</style>
-</head>
-<body>
-
-<header id="header">
-
-    <div id="logo">⚓ MULTISTREAM</div>
-
-    <div id="layout-controls"></div>
-
-</header>
-
-<main id="stage"></main>
-
-<script>
-
-(function(){
-
-    let count =
-        parseInt(localStorage.getItem('ms_count')) || 4;
-
-    let streams =
-        JSON.parse(localStorage.getItem('ms_streams')) ||
-        Array(6).fill().map((_,i)=>({
-            id:i,
-            url:''
-        }));
-
-    function save(){
-
-        localStorage.setItem(
-            'ms_count',
-            count
-        );
-
-        localStorage.setItem(
-            'ms_streams',
-            JSON.stringify(streams)
-        );
-    }
-
-    function renderControls(){
-
-        const el =
-            document.getElementById('layout-controls');
-
-        el.innerHTML = '';
-
-        [1,2,4,6].forEach(n=>{
-
-            const btn =
-                document.createElement('button');
-
-            btn.className =
-                'layout-btn' +
-                (n===count ? ' active' : '');
-
-            btn.textContent = n;
-
-            btn.onclick = ()=>{
-
-                count = n;
-
-                save();
-
-                renderAll();
-            };
-
-            el.appendChild(btn);
-        });
-    }
-
-    function renderStage(){
-
-        const stage =
-            document.getElementById('stage');
-
-        const grids = {
-            1:'1fr',
-            2:'1fr 1fr',
-            4:'1fr 1fr',
-            6:'1fr 1fr 1fr'
-        };
-
-        const rows = {
-            1:'1fr',
-            2:'1fr',
-            4:'1fr 1fr',
-            6:'1fr 1fr'
-        };
-
-        stage.style.gridTemplateColumns =
-            grids[count];
-
-        stage.style.gridTemplateRows =
-            rows[count];
-
-        stage.innerHTML = '';
-
-        streams
-        .slice(0,count)
-        .forEach((s,i)=>{
-
-            const cell =
-                document.createElement('div');
-
-            cell.className = 'cell';
-
-            if(s.url){
-
-                cell.innerHTML = `
-
-                    <iframe
-                        src="${s.url}"
-                        allowfullscreen
-                        allow="autoplay; fullscreen">
-                    </iframe>
-
-                    <button
-                        class="settings-btn"
-                        onclick="openModal(${i})">
-
-                        ⚙️
-
-                    </button>
-
-                `;
-
-            }else{
-
-                cell.innerHTML = `
-
-                    <button
-                        class="cell-empty"
-                        onclick="openModal(${i})">
-
-                        + AJOUTER FLUX ${i+1}
-
-                    </button>
-
-                `;
-            }
-
-            stage.appendChild(cell);
-
-        });
-
-    }
-
-    /* MODAL */
-
-    window.openModal = (id)=>{
-
-        const overlay =
-            document.createElement('div');
-
-        overlay.className =
-            'modal-overlay';
-
-        overlay.innerHTML = `
-
-            <div class="modal">
-
-                <p>URL DU FLUX</p>
-
-                <input
-                    id="url-in"
-                    type="text"
-                    placeholder="https://..."
-                    value="${streams[id].url}">
-
-                <div class="modal-buttons">
-
-                    <button
-                        class="modal-btn"
-                        onclick="confirmUrl(${id})">
-
-                        VALIDER
-
-                    </button>
-
-                    <button
-                        class="modal-btn"
-                        onclick="this.closest('.modal-overlay').remove()">
-
-                        ANNULER
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        `;
-
-        document.body.appendChild(overlay);
-    };
-
-    window.confirmUrl = (id)=>{
-
-        streams[id].url =
-            document
-            .getElementById('url-in')
-            .value
-            .trim();
-
-        save();
-
-        renderAll();
-
-        document
-        .querySelector('.modal-overlay')
-        .remove();
-    };
-
-    function renderAll(){
-
-        renderControls();
-
-        renderStage();
-    }
-
-    renderAll();
-
-})();
-
-</script>
-
-</body>
-</html>
