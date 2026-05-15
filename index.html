@@ -32,73 +32,53 @@
     --display:'Syne', sans-serif;
 }
 
-html,
-body{
+html,body{
     width:100%;
     height:100%;
     overflow:hidden;
-
     background:var(--bg);
     color:var(--text);
-
     font-family:var(--mono);
 }
 
 /* HEADER */
-
 #header{
     position:fixed;
-
     top:0;
     left:0;
     right:0;
-
     height:var(--header);
-
     background:rgba(8,10,15,0.95);
-
     backdrop-filter:blur(15px);
-
     border-bottom:1px solid var(--border);
-
     display:flex;
     align-items:center;
-
     padding:0 20px;
-
     z-index:5000;
 }
 
 #logo{
     font-family:var(--display);
-
     font-size:13px;
     font-weight:800;
-
     letter-spacing:.15em;
-
     color:var(--accent);
 }
 
 #layout-controls{
     display:flex;
     gap:6px;
-
     margin-left:auto;
 }
 
 .layout-btn{
     width:32px;
     height:28px;
-
     border:1px solid var(--border);
     border-radius:4px;
-
     background:transparent;
     color:var(--text);
-
     cursor:pointer;
-
     transition:.2s;
 }
 
@@ -109,150 +89,41 @@ body{
 
 .layout-btn.active{
     border-color:var(--accent);
-
     background:rgba(99,179,237,.15);
-
     color:var(--accent);
 }
 
 /* STAGE */
-
 #stage{
     position:fixed;
-
     top:var(--header);
     left:0;
     right:0;
     bottom:0;
 
     display:grid;
-
     gap:4px;
     padding:4px;
 }
 
 .cell{
     position:relative;
-
     overflow:hidden;
-
     background:#000;
-
     border:1px solid var(--border);
     border-radius:8px;
 }
 
-/* IFRAME */
-
+/* IFRAME CLEAN (IMPORTANT) */
 iframe{
-    position:absolute;
-
-    top:-55px;
-    left:-60px;
-
-    width:calc(100% + 120px);
-    height:calc(100% + 110px);
-
+    width:100%;
+    height:100%;
     border:none;
-
-    background:#000;
 }
 
-/* CACHE DES UI DU PLAYER */
-
-.iframe-cover-top{
-    position:absolute;
-
-    top:0;
-    left:0;
-    right:0;
-
-    height:70px;
-
-    background:#000;
-
-    z-index:50;
-
-    pointer-events:none;
-}
-
-.iframe-cover-bottom{
-    position:absolute;
-
-    bottom:0;
-    left:0;
-    right:0;
-
-    height:70px;
-
-    background:#000;
-
-    z-index:50;
-
-    pointer-events:none;
-}
-
-.iframe-cover-left{
-    position:absolute;
-
-    top:0;
-    bottom:0;
-    left:0;
-
-    width:60px;
-
-    background:#000;
-
-    z-index:50;
-
-    pointer-events:none;
-}
-
-.iframe-cover-right{
-    position:absolute;
-
-    top:0;
-    bottom:0;
-    right:0;
-
-    width:60px;
-
-    background:#000;
-
-    z-index:50;
-
-    pointer-events:none;
-}
-
-/* CACHE PLAY CENTRAL */
-
-.iframe-center-block{
-    position:absolute;
-
-    top:50%;
-    left:50%;
-
-    width:120px;
-    height:120px;
-
-    transform:translate(-50%,-50%);
-
-    border-radius:50%;
-
-    background:rgba(0,0,0,.92);
-
-    backdrop-filter:blur(8px);
-
-    z-index:50;
-
-    pointer-events:none;
-}
-
-/* BOUTON ROUE */
-
+/* SETTINGS BUTTON */
 .settings-btn{
     position:absolute;
-
     top:10px;
     right:10px;
 
@@ -263,11 +134,9 @@ iframe{
     border-radius:10px;
 
     background:rgba(0,0,0,.65);
-
     backdrop-filter:blur(10px);
 
     color:white;
-
     font-size:18px;
 
     cursor:pointer;
@@ -275,7 +144,6 @@ iframe{
     z-index:200;
 
     opacity:0;
-
     transition:.2s;
 }
 
@@ -287,65 +155,47 @@ iframe{
     transform:scale(1.08);
 }
 
-/* CASE VIDE */
-
+/* EMPTY */
 .cell-empty{
     width:100%;
     height:100%;
-
     display:flex;
     align-items:center;
     justify-content:center;
 
     border:2px dashed var(--border);
-
     background:rgba(99,179,237,.03);
-
     color:var(--accent);
-
     cursor:pointer;
 }
 
 /* MODAL */
-
 .modal-overlay{
     position:fixed;
     inset:0;
-
     background:rgba(0,0,0,.8);
-
     display:flex;
     align-items:center;
     justify-content:center;
-
     z-index:99999;
 }
 
 .modal{
     width:90%;
     max-width:420px;
-
     background:#0d1220;
-
     border:1px solid var(--accent);
     border-radius:12px;
-
     padding:20px;
 }
 
 .modal input{
     width:100%;
-
     padding:12px;
-
     margin:15px 0;
-
     background:#060810;
-
     border:1px solid var(--border);
-
     color:white;
-
     outline:none;
 }
 
@@ -356,19 +206,12 @@ iframe{
 
 .modal-btn{
     flex:1;
-
     padding:10px;
-
     border:none;
     border-radius:6px;
-
     background:rgba(99,179,237,.15);
-
     color:var(--accent);
-
     cursor:pointer;
-
-    transition:.2s;
 }
 
 .modal-btn:hover{
@@ -378,14 +221,12 @@ iframe{
 
 </style>
 </head>
+
 <body>
 
 <header id="header">
-
     <div id="logo">⚓ MULTISTREAM</div>
-
     <div id="layout-controls"></div>
-
 </header>
 
 <main id="stage"></main>
@@ -394,66 +235,38 @@ iframe{
 
 (function(){
 
-    let count =
-        parseInt(localStorage.getItem('ms_count')) || 4;
+    let count = parseInt(localStorage.getItem('ms_count')) || 4;
 
-    let streams =
-        JSON.parse(localStorage.getItem('ms_streams')) ||
-        Array(6).fill().map((_,i)=>({
-            id:i,
-            url:''
-        }));
+    let streams = JSON.parse(localStorage.getItem('ms_streams')) ||
+        Array(6).fill().map((_,i)=>({ id:i, url:'' }));
 
     function save(){
-
-        localStorage.setItem(
-            'ms_count',
-            count
-        );
-
-        localStorage.setItem(
-            'ms_streams',
-            JSON.stringify(streams)
-        );
+        localStorage.setItem('ms_count', count);
+        localStorage.setItem('ms_streams', JSON.stringify(streams));
     }
 
     function renderControls(){
-
-        const el =
-            document.getElementById('layout-controls');
-
+        const el = document.getElementById('layout-controls');
         el.innerHTML = '';
 
         [1,2,4,6].forEach(n=>{
-
-            const btn =
-                document.createElement('button');
-
-            btn.className =
-                'layout-btn' +
-                (n===count ? ' active' : '');
-
+            const btn = document.createElement('button');
+            btn.className = 'layout-btn' + (n===count ? ' active' : '');
             btn.textContent = n;
 
             btn.onclick = ()=>{
-
                 count = n;
-
                 save();
-
                 renderAll();
             };
 
             el.appendChild(btn);
-
         });
-
     }
 
     function renderStage(){
 
-        const stage =
-            document.getElementById('stage');
+        const stage = document.getElementById('stage');
 
         const grids = {
             1:'1fr',
@@ -469,144 +282,82 @@ iframe{
             6:'1fr 1fr'
         };
 
-        stage.style.gridTemplateColumns =
-            grids[count];
-
-        stage.style.gridTemplateRows =
-            rows[count];
+        stage.style.gridTemplateColumns = grids[count];
+        stage.style.gridTemplateRows = rows[count];
 
         stage.innerHTML = '';
 
-        streams
-        .slice(0,count)
-        .forEach((s,i)=>{
+        streams.slice(0,count).forEach((s,i)=>{
 
-            const cell =
-                document.createElement('div');
-
+            const cell = document.createElement('div');
             cell.className = 'cell';
 
             if(s.url){
 
                 cell.innerHTML = `
-
                     <iframe
                         src="${s.url}"
-                        allowfullscreen
-                        allow="autoplay; fullscreen">
+                        allow="autoplay; fullscreen"
+                        allowfullscreen>
                     </iframe>
 
-                    <div class="iframe-cover-top"></div>
-                    <div class="iframe-cover-bottom"></div>
-                    <div class="iframe-cover-left"></div>
-                    <div class="iframe-cover-right"></div>
-                    <div class="iframe-center-block"></div>
-
-                    <button
-                        class="settings-btn"
-                        onclick="openModal(${i})">
-
-                        ⚙️
-
-                    </button>
-
+                    <button class="settings-btn" onclick="openModal(${i})">⚙️</button>
                 `;
 
-            }else{
+            } else {
 
                 cell.innerHTML = `
-
-                    <button
-                        class="cell-empty"
-                        onclick="openModal(${i})">
-
+                    <button class="cell-empty" onclick="openModal(${i})">
                         + AJOUTER FLUX ${i+1}
-
                     </button>
-
                 `;
             }
 
             stage.appendChild(cell);
-
         });
-
     }
-
-    /* MODAL */
 
     window.openModal = (id)=>{
 
-        const overlay =
-            document.createElement('div');
-
-        overlay.className =
-            'modal-overlay';
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
 
         overlay.innerHTML = `
-
             <div class="modal">
-
                 <p>URL DU FLUX</p>
 
-                <input
-                    id="url-in"
-                    type="text"
-                    placeholder="https://..."
-                    value="${streams[id].url}">
+                <input id="url-in" value="${streams[id].url}" placeholder="https://...">
 
                 <div class="modal-buttons">
 
-                    <button
-                        class="modal-btn"
-                        onclick="confirmUrl(${id})">
-
+                    <button class="modal-btn" onclick="confirmUrl(${id})">
                         VALIDER
-
                     </button>
 
-                    <button
-                        class="modal-btn"
-                        onclick="this.closest('.modal-overlay').remove()">
-
+                    <button class="modal-btn" onclick="this.closest('.modal-overlay').remove()">
                         ANNULER
-
                     </button>
 
                 </div>
-
             </div>
-
         `;
 
         document.body.appendChild(overlay);
-
     };
 
     window.confirmUrl = (id)=>{
 
-        streams[id].url =
-            document
-            .getElementById('url-in')
-            .value
-            .trim();
+        streams[id].url = document.getElementById('url-in').value.trim();
 
         save();
-
         renderAll();
 
-        document
-        .querySelector('.modal-overlay')
-        .remove();
-
+        document.querySelector('.modal-overlay').remove();
     };
 
     function renderAll(){
-
         renderControls();
-
         renderStage();
-
     }
 
     renderAll();
